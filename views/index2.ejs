@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hot Toddy</title>
+  <style>
+    table {
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hot Toddy Notion Data:</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>SKU</th>
+        <th>確認</th>
+        <th>分類</th>
+        <th>tag</th>
+        <th>品名</th>
+        <th>定價</th>
+        <th>庫1</th>
+        <th>庫2</th>
+        <th>memo</th>
+        <th>圖片</th>
+        <th>更新</th>
+        <th>spid</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% items.forEach(function(item) { %>
+        <tr>
+          <td><%= item.SKU %></td>
+          <td><%= item.確認 %></td>
+          <td><%= item.分類 %></td>
+          <td><%= item.tag.join(', ') %></td>
+          <td><%= item.品名 %></td>
+          <td><%= item.定價 %></td>
+          <td><%= item.庫1 %></td>
+          <td><%= item.庫2 %></td>
+          <td><%= item.memo %></td>
+          <!-- <td><%= item.圖片 %></td> -->
+          <td>
+            <% if (item.圖片) { %>
+              <img src="<%= item.圖片 %>" style="max-width: 100px; max-height: 100px;" alt="圖片">
+            <% } else { %>
+              没有图像
+            <% } %>
+          </td>
+          
+          <% if (item.更新) { %>
+            <td>  
+              <button id="<%- item.SKU %>_btn" onclick='handleClick("<%- JSON.stringify(item.SKU).slice(1, -1) %>","<%- JSON.stringify(item.spid).slice(1, -1)%>")'>建立商品</button>
+            </td>
+          <% } else { %>
+            <td></td>
+          <% } %>
+          <% if (item.spid) { %>
+            <td>
+              <button id="sp_<%= item.spid %>" onclick='modifyShopityItem("<%= item.SKU %>","<%= item.spid %>")'>修改 <%= item.spid %></button>
+            </td>
+          <% } else { %>
+            <td></td>
+          <% } %>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <script src="../javascripts/magic.js"></script>
+</body>
+</html>
