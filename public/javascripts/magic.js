@@ -6,33 +6,53 @@ function moveTop() {
     });
   }
 
-// // // 声明一个变量来标识后端渲染是否完成
-// let renderCompleted = false;
-
-// // // 定义一个函数来处理后端渲染完成的逻辑
-// function handleRenderCompleted() {
-//   // 后端渲染已完成，执行你的前端逻辑
-//   console.log('后端渲染已完成');
-//   // 示例：显示 toast
-//   const toast = document.getElementById('liveToast');
-//   toast.classList.remove('hide');
-//   renderCompleted = true;
-// }
-
-// // // 在页面加载完成后发送请求获取数据
-// window.addEventListener('DOMContentLoaded', () => {
-//   fetch('/')
-//     .then(response => response.json())
-//     .then(data => {
-//       console.log(data);
-//       if (data.renderCompleted) {
-//         handleRenderCompleted();
-//       }
-//     })
-//     .catch(error => {
-//       console.error(error);
-//     });
-// });
+  function magicFunction() {
+    var items = JSON.parse(document.getElementById("itemsData").getAttribute("data-items"));
+    console.log("items log: ", items);
+  
+    var progressContainer = document.getElementById("progressContainer");
+    var progressBar = document.querySelector(".progress-bar");
+  
+    if (items.length > 0) {
+      progressContainer.style.display = "flex";
+      progressBar.style.animation = "progressBarAnimation 4s forwards"; // 添加动画属性
+    }
+  
+    var itemIndex = 0;
+    var progress = 0;
+    var updateInterval = 1000; // 1秒钟更新一次进度条
+  
+    function updateProgress() {
+      progress += 1;
+      progressBar.style.width = progress + "%";
+  
+      if (progress >= 100) {
+        clearInterval(progressInterval);
+        progressContainer.style.display = "none";
+      }
+    }
+  
+    var progressInterval = setInterval(updateProgress, updateInterval);
+  
+    function processItem(item) {
+      // 模拟处理延迟
+      setTimeout(function() {
+        // 处理每个item的操作
+  
+        if (itemIndex === items.length - 1) {
+          // 最后一个item处理完成后，隐藏进度条
+          progressContainer.style.display = "none";
+        }
+  
+        itemIndex++;
+      }, Math.random() * 2000); // 使用随机的延迟时间来模拟不同的处理时间
+    }
+  
+    items.forEach(function(item) {
+      processItem(item);
+    });
+  }
+  
 
 
 

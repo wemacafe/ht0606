@@ -1,0 +1,70 @@
+.table-responsive {
+    overflow-x: auto;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    white-space: nowrap;
+  }
+  th, td {
+    border: 1px solid black;
+    padding: 8px;
+  }
+  .image-wrapper {
+    border: 2px solid blue;
+    padding: 2px;
+    display: inline-block;
+    overflow: hidden;
+  }
+  .image-wrapper img {
+    transition: transform 0.3s ease;
+  }
+  .image-wrapper:hover img {
+    transform: scale(1.1);
+  }
+  .clicked {
+    background-color: yellow;
+  }
+  #floatingImage {
+    width: 50px;
+    height: auto;
+    position: fixed;
+    right: 0px;
+    bottom: 20px;
+    z-index: 9999;
+  }
+  .table-striped tbody tr:hover td {
+  background-color: rgb(219, 201, 188);
+  }
+  
+  .progress-container {
+    width: 100%;
+    height: 10px;
+    background-color: #f1f1f1;
+    margin-bottom: 20px;
+    border-radius: 10px; /* 添加圆角边框使其形状为pill */
+    display: flex; /* 使用flex布局 */
+    align-items: center; /* 垂直居中对齐 */
+    overflow: hidden; /* 添加溢出隐藏以避免动画溢出 */
+  }
+  
+  .progress-bar {
+    height: 100%;
+    background-color: #dd8809;
+    text-align: center;
+    color: white;
+    border-radius: 10px; /* 添加圆角边框使其形状为pill */
+    transition: width 0.2s; /* 添加过渡效果 */
+    animation-fill-mode: forwards; /* 设置动画填充模式为向前填充 */
+  }
+  
+  @keyframes progressBarAnimation {
+    0% {
+      width: 0%;
+    }
+    100% {
+      width: 100%;
+    }
+  }
+  
+  
