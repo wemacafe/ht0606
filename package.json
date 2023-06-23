@@ -15,9 +15,11 @@
     "dotenv": "^16.1.4",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
+    "file-saver": "^2.0.5",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
     "shopify-api-node": "^3.12.5",
-    "util": "^0.12.5"
+    "util": "^0.12.5",
+    "xlsx": "^0.18.5"
   }
 }

@@ -48,11 +48,7 @@ router.get('/', async (req, res) => {
     });
       items.sort((a, b) => a.SKU.localeCompare(b.SKU));
       res.render('index', { items });
-      // res.send({ renderCompleted: true });
-      // res.render('index', { items }, () => {
-      //   // 后端渲染完成后发送消息给前端
-      //   res.send({ renderCompleted: true });
-      // });
+    
   } catch (error) {
       console.error(error.body);
       res.status(500).send('Internal Server Error');
