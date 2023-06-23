@@ -71,7 +71,7 @@ router.get('/2', async (req, res) => {
 
                 return {
                   Name: order.shipping_address ? (order.shipping_address.last_name + order.shipping_address.first_name) : 'N/A',
-                  Phone: order.shipping_address && order.shipping_address.phone ? order.shipping_address.phone.replace(/\s/g, '').replace('+886', '09') : 'N/A',
+                  Phone: order.shipping_address && order.shipping_address.phone ? order.shipping_address.phone.replace(/\s/g, '').replace('+886', '0') : 'N/A',
                   Market: storeId,
                   Goods: "常溫",
                   Items: items,
