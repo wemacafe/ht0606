@@ -1,9 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
-
 const { Client } = require('@notionhq/client');
-
 
 const notion = new Client({
   auth: 'secret_0dN4tJfxQ0VetdP9EgkNbjBftSrf3Ftwd1xFwegj8WX', // 替換為您的 Notion API Token
@@ -13,12 +11,12 @@ const databaseId = 'c326cf7429544b80b3f6f62fa974a05b';
 router.get('/', async (req, res) => {
   try {
     const response = await notion.databases.query({
-      database_id: databaseId
+      database_id: databaseId,
     });
 
     console.log(response.results);
     // const items = response.results.map(result => result.properties['StorageNo'].title[0].plain_text);
-    const items = response.results.map(result => {
+    const items = response.results.map((result) => {
       const storageNo = result.properties['SKU'].title[0].plain_text;
       console.log(storageNo);
       if (storageNo && storageNo.length > 0) {
@@ -40,14 +38,8 @@ router.get('/', async (req, res) => {
     //     return productName.rich_text[0].plain_text;
     //   }
     // });
-    
-    
-    
-    
-    
+
     res.render('index', { items });
-
-
   } catch (error) {
     console.log(error);
     console.error(error);
@@ -55,10 +47,6 @@ router.get('/', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
-
-
-
-
 
 // /* GET home page. */
 // router.get('/', function(req, res, next) {

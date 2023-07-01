@@ -9,32 +9,32 @@ const execPromisified = util.promisify(exec);
 
 require('dotenv').config();
 
-
 const notion = new Client({
   auth: process.env.NoAPIKEY, // 替換為您的 Notion API Token
 });
-const YOUR_NOTION_API_KEY=process.env.NoAPIKEY;
+const YOUR_NOTION_API_KEY = process.env.NoAPIKEY;
 const databaseId = process.env.NoDBID_Product;
 
 const shopify = new Shopify({
   shopName: process.env.ShopID,
   apiKey: process.env.ShopifyKey,
-  password: process.env.ShopifyToken
+  password: process.env.ShopifyToken,
 });
 
 // get notion product table and render to index.ejs
 router.get('/', async (req, res) => {
   try {
     const response = await notion.databases.query({
-      database_id: databaseId
+      database_id: databaseId,
     });
 
-    const items = response.results.map(result => {
+    const items = response.results.map((result) => {
       const item = {
         SKU: result.properties['SKU']?.title[0]?.plain_text || '',
         確認: result.properties['確認']?.checkbox || '',
         分類: result.properties['分類']?.select?.name || '',
-        tag: result.properties['tag']?.multi_select?.map(tag => tag.name) || [], // 新增對 "tag" 欄位的處理
+        tag:
+          result.properties['tag']?.multi_select?.map((tag) => tag.name) || [], // 新增對 "tag" 欄位的處理
         品名: result.properties['品名']?.rich_text[0]?.plain_text || '',
         定價: result.properties['定價']?.number || 0,
         庫1: result.properties['庫1']?.number || '',
@@ -46,96 +46,111 @@ router.get('/', async (req, res) => {
       };
       return item;
     });
-      items.sort((a, b) => a.SKU.localeCompare(b.SKU));
-      res.render('index', { items });
-    
+    items.sort((a, b) => a.SKU.localeCompare(b.SKU));
+    res.render('index', { items });
   } catch (error) {
-      console.error(error.body);
-      res.status(500).send('Internal Server Error');
+    console.error(error.body);
+    res.status(500).send('Internal Server Error');
   }
 });
 
 //cancel renew button on notion after renew shopify item
-router.post('/done', async function(req, res) {
-    const sku=req.body.sku;
-    try {
-      // 使用 Notion API 檢索資料庫中具有特定 SKU 的頁面
-      const response = await axios.post('https://api.notion.com/v1/databases/'+databaseId+'/query', {
+router.post('/done', async function (req, res) {
+  const sku = req.body.sku;
+  try {
+    // 使用 Notion API 檢索資料庫中具有特定 SKU 的頁面
+    const response = await axios.post(
+      'https://api.notion.com/v1/databases/' + databaseId + '/query',
+      {
         filter: {
           property: 'SKU',
           title: {
-            equals: sku
-          }
-        }
-      }, {
+            equals: sku,
+          },
+        },
+      },
+      {
         headers: {
-          'Authorization': 'Bearer '+YOUR_NOTION_API_KEY,
-          'Notion-Version': '2022-02-22'
-        }
-      });
-      if (response.status === 200) {
-        const databaseData = response.data;
-  
-        if (databaseData.results.length > 0) {
-          const pageId = databaseData.results[0].id;
-    
-          const updatedValue = false;
-          // 使用 Notion API 更新頁面
-        const updateResponse = await axios.patch(`https://api.notion.com/v1/pages/${pageId}`, {
-          properties: {
-            '更新': {
-              checkbox: updatedValue
-            }
+          Authorization: 'Bearer ' + YOUR_NOTION_API_KEY,
+          'Notion-Version': '2022-02-22',
+        },
+      }
+    );
+    if (response.status === 200) {
+      const databaseData = response.data;
+
+      if (databaseData.results.length > 0) {
+        const pageId = databaseData.results[0].id;
+
+        const updatedValue = false;
+        // 使用 Notion API 更新頁面
+        const updateResponse = await axios.patch(
+          `https://api.notion.com/v1/pages/${pageId}`,
+          {
+            properties: {
+              更新: {
+                checkbox: updatedValue,
+              },
+            },
+          },
+          {
+            headers: {
+              Authorization: 'Bearer ' + YOUR_NOTION_API_KEY,
+              'Notion-Version': '2022-02-22',
+            },
           }
-        }, {
-          headers: {
-            'Authorization': 'Bearer '+YOUR_NOTION_API_KEY,
-            'Notion-Version': '2022-02-22'
-          }
-        });
+        );
 
         if (updateResponse.status === 200) {
           res.send({
-            "status":"success",
-            "message":"renew complete",
+            status: 'success',
+            message: 'renew complete',
           });
         } else {
           console.error('更新資料時發生錯誤', updateResponse.data);
-          res.status(500).send({"status":"error","message":"500 資料更新失敗"});
+          res
+            .status(500)
+            .send({ status: 'error', message: '500 資料更新失敗' });
         }
       } else {
-        res.status(404).send({"status":"error","message":'404 找不到對應的資料'});
+        res
+          .status(404)
+          .send({ status: 'error', message: '404 找不到對應的資料' });
       }
     } else {
       console.error('檢索資料時發生錯誤', response.data);
-      res.status(500).send({"status":"error","message":'500 資料更新失敗'});
+      res.status(500).send({ status: 'error', message: '500 資料更新失敗' });
     }
   } catch (error) {
     console.error('發生錯誤', error);
-    res.status(500).send({"status":"error","message":'500 資料更新失敗'});
+    res.status(500).send({ status: 'error', message: '500 資料更新失敗' });
   }
 });
 
 //receive SKU and spid (write spid to notion and cancel renew button)
-router.post('/updateConfirm', async function(req, res) {
+router.post('/updateConfirm', async function (req, res) {
   const skuToUpdate = req.body.SKU;
-  const spidToUpdate=req.body.spid;
-  console.log("post value:",skuToUpdate);
+  const spidToUpdate = req.body.spid;
+  console.log('post value:', skuToUpdate);
   try {
     // 使用 Notion API 檢索資料庫中具有特定 SKU 的頁面
-    const response = await axios.post('https://api.notion.com/v1/databases/'+databaseId+'/query', {
-      filter: {
-        property: 'SKU',
-        title: {
-          equals: skuToUpdate
-        }
+    const response = await axios.post(
+      'https://api.notion.com/v1/databases/' + databaseId + '/query',
+      {
+        filter: {
+          property: 'SKU',
+          title: {
+            equals: skuToUpdate,
+          },
+        },
+      },
+      {
+        headers: {
+          Authorization: 'Bearer ' + YOUR_NOTION_API_KEY,
+          'Notion-Version': '2022-02-22',
+        },
       }
-    }, {
-      headers: {
-        'Authorization': 'Bearer '+YOUR_NOTION_API_KEY,
-        'Notion-Version': '2022-02-22'
-      }
-    });
+    );
 
     if (response.status === 200) {
       const databaseData = response.data;
@@ -146,62 +161,78 @@ router.post('/updateConfirm', async function(req, res) {
 
         // 取反欄位的值
         const updatedValue = false;
-       
 
-        var gotU={};
-        gotU['sku']=skuToUpdate;
-        gotU['title']=databaseData.results[0].properties['品名']?.rich_text[0]?.plain_text || '';
-        gotU['product_type']=databaseData.results[0].properties['分類']?.select?.name || '';
-        gotU['price']=databaseData.results[0].properties['定價']?.number || 0;
-        gotU['vendor']="Hot Toddy Miracle Accessories";
-        gotU['src']=databaseData.results[0].properties['圖片']?.files[0]?.name || '';
-        gotU['inventory_quantity_L1_68315971798']=databaseData.results[0].properties['庫1']?.number || 0;
-        gotU['inventory_quantity_L2_72517222614']=databaseData.results[0].properties['庫2']?.number || 0;
-        gotU['spid']=databaseData.results[0].properties['spid']?.rich_text[0]?.plain_text || spidToUpdate;
-        gotU['tag'] = databaseData.results[0].properties['tag']?.multi_select?.map(tag => tag.name) || []; // 新增對 "tag" 欄位的處理
+        var gotU = {};
+        gotU['sku'] = skuToUpdate;
+        gotU['title'] =
+          databaseData.results[0].properties['品名']?.rich_text[0]
+            ?.plain_text || '';
+        gotU['product_type'] =
+          databaseData.results[0].properties['分類']?.select?.name || '';
+        gotU['price'] = databaseData.results[0].properties['定價']?.number || 0;
+        gotU['vendor'] = 'Hot Toddy Miracle Accessories';
+        gotU['src'] =
+          databaseData.results[0].properties['圖片']?.files[0]?.name || '';
+        gotU['inventory_quantity_L1_68315971798'] =
+          databaseData.results[0].properties['庫1']?.number || 0;
+        gotU['inventory_quantity_L2_72517222614'] =
+          databaseData.results[0].properties['庫2']?.number || 0;
+        gotU['spid'] =
+          databaseData.results[0].properties['spid']?.rich_text[0]
+            ?.plain_text || spidToUpdate;
+        gotU['tag'] =
+          databaseData.results[0].properties['tag']?.multi_select?.map(
+            (tag) => tag.name
+          ) || []; // 新增對 "tag" 欄位的處理
         // 使用 Notion API 更新頁面
-        const updateResponse = await axios.patch(`https://api.notion.com/v1/pages/${pageId}`, {
-          properties: {
-            '更新': {
-              checkbox: updatedValue
+        const updateResponse = await axios.patch(
+          `https://api.notion.com/v1/pages/${pageId}`,
+          {
+            properties: {
+              更新: {
+                checkbox: updatedValue,
+              },
+              spid: {
+                rich_text: [
+                  {
+                    text: {
+                      content: spidToUpdate,
+                    },
+                  },
+                ],
+              },
             },
-            'spid': {
-              rich_text: [{
-                text: {
-                  content: spidToUpdate
-                }
-              }]
-            }
+          },
+          {
+            headers: {
+              Authorization: 'Bearer ' + YOUR_NOTION_API_KEY,
+              'Notion-Version': '2022-02-22',
+            },
           }
-        }, {
-          headers: {
-            'Authorization': 'Bearer '+YOUR_NOTION_API_KEY,
-            'Notion-Version': '2022-02-22'
-          }
-        });
+        );
 
         if (updateResponse.status === 200) {
           console.log(gotU);
           res.send({
-            "message":"資料更新成功",
-            "answer":skuToUpdate,
-            "raw":JSON.stringify(gotU),
-            "spid":spidToUpdate
+            message: '資料更新成功',
+            answer: skuToUpdate,
+            raw: JSON.stringify(gotU),
+            spid: spidToUpdate,
           });
         } else {
           console.error('更新資料時發生錯誤', updateResponse.data);
-          res.status(500).send({"message":"資料更新失敗"});
+          res.status(500).send({ message: '資料更新失敗' });
         }
       } else {
-        res.status(404).send({"message":'找不到對應的資料'});
+        res.status(404).send({ message: '找不到對應的資料' });
       }
     } else {
       console.error('檢索資料時發生錯誤', response.data);
-      res.status(500).send({"message":'資料更新失敗'});
+      res.status(500).send({ message: '資料更新失敗' });
     }
   } catch (error) {
     console.error('發生錯誤', error);
-    res.status(500).send({"message":'資料更新失敗'});
+    res.status(500).send({ message: '資料更新失敗' });
   }
 });
 
@@ -225,11 +256,21 @@ router.post('/checkShopifyConnection', async (req, res) => {
 });
 
 //create new shopify item
-router.post('/newRawShopify', async function(req, res) {
-  console.log("req_newRaw:", req.body);
+router.post('/newRawShopify', async function (req, res) {
+  console.log('req_newRaw:', req.body);
   try {
     // 從請求中取得商品資料
-    const { sku, title, product_type, price, vendor, src, inventory_quantity_L1_68315971798, inventory_quantity_L2_72517222614,tag } = req.body;
+    const {
+      sku,
+      title,
+      product_type,
+      price,
+      vendor,
+      src,
+      inventory_quantity_L1_68315971798,
+      inventory_quantity_L2_72517222614,
+      tag,
+    } = req.body;
 
     // 建立商品
     const createdProduct = await shopify.product.create({
@@ -241,22 +282,29 @@ router.post('/newRawShopify', async function(req, res) {
         {
           sku,
           price,
-          inventory_management: "shopify",
+          inventory_management: 'shopify',
           inventory_quantity: inventory_quantity_L1_68315971798,
-          location_id: 68315971798
-        }
+          location_id: 68315971798,
+        },
       ],
       images: [
         {
-          src
-        }
-      ]
+          src,
+        },
+      ],
     });
 
-    res.send({ success: true, message: '商品已成功建立', sku:req.body.sku, product: createdProduct });
+    res.send({
+      success: true,
+      message: '商品已成功建立',
+      sku: req.body.sku,
+      product: createdProduct,
+    });
   } catch (error) {
     console.error('新增商品到 Shopify 時發生錯誤：', error);
-    res.status(500).send({ success: false, error: '新增商品到 Shopify 時發生錯誤' });
+    res
+      .status(500)
+      .send({ success: false, error: '新增商品到 Shopify 時發生錯誤' });
   }
 });
 
@@ -292,18 +340,18 @@ router.post('/getNotionSkuItem', async (req, res) => {
       inventory_quantity_L1_68315971798: result.properties['庫1']?.number || 0,
       inventory_quantity_L2_72517222614: result.properties['庫2']?.number || 0,
       spid: result.properties['spid']?.rich_text[0]?.plain_text || spid,
-      tag: result.properties['tag']?.multi_select?.map(tag => tag.name) || [],
+      tag: result.properties['tag']?.multi_select?.map((tag) => tag.name) || [],
     };
 
     res.send({
-      "status":"success",
-      "message":"獲取object成功",
-      "gotU":JSON.stringify(gotU)
+      status: 'success',
+      message: '獲取object成功',
+      gotU: JSON.stringify(gotU),
     });
   } catch (error) {
     console.error(error.body);
     res.status(500).send({
-      "message":'Internal Server Error'
+      message: 'Internal Server Error',
     });
   }
 });
@@ -312,13 +360,23 @@ router.post('/getNotionSkuItem', async (req, res) => {
 router.post('/renewShopifyItemNG', async (req, res) => {
   console.log(req.body);
   try {
-    const { spid, sku, title, product_type, price, vendor, src, inventory_quantity_L1_68315971798, inventory_quantity_L2_72517222614, tag } = req.body;
+    const {
+      spid,
+      sku,
+      title,
+      product_type,
+      price,
+      vendor,
+      src,
+      inventory_quantity_L1_68315971798,
+      inventory_quantity_L2_72517222614,
+      tag,
+    } = req.body;
     console.log(typeof spid, parseInt(spid));
     console.log(title);
     // 使用 spid 搜尋相符的 Shopify 商品
     const product = await shopify.product.get(parseInt(spid));
     // const product = await shopify.product.get(parseInt(spid));
-
 
     // 更新商品屬性
     product.title = title;
@@ -346,16 +404,19 @@ router.post('/renewShopifyItemNG', async (req, res) => {
     //     ];
     //   }
     // });
-    console.log("product:",product);
+    console.log('product:', product);
     // 更新商品
     // const updatedProduct = await shopify.product.update(product);
-    const updatedProduct = await shopify.product.update({ id: product.id, title: product.title });
+    const updatedProduct = await shopify.product.update({
+      id: product.id,
+      title: product.title,
+    });
 
     // 執行完更新後，可以根據情況回傳成功或失敗訊息給前端
-    res.send({ 
-      status: 'success', 
+    res.send({
+      status: 'success',
       message: 'Shopify 商品更新成功',
-      product: updatedProduct 
+      product: updatedProduct,
     });
   } catch (error) {
     console.error(error);
@@ -363,12 +424,23 @@ router.post('/renewShopifyItemNG', async (req, res) => {
   }
 });
 
-// partial cURL function test work with title 
+// partial cURL function test work with title
 router.post('/renewShopifyItemcURL', async (req, res) => {
   try {
-    const { spid, sku, title, product_type, price, vendor, src, inventory_quantity_L1_68315971798, inventory_quantity_L2_72517222614, tag } = req.body;
-    
-    var spid_number=parseInt(spid);
+    const {
+      spid,
+      sku,
+      title,
+      product_type,
+      price,
+      vendor,
+      src,
+      inventory_quantity_L1_68315971798,
+      inventory_quantity_L2_72517222614,
+      tag,
+    } = req.body;
+
+    var spid_number = parseInt(spid);
     // 使用 execPromisified 方法執行 curl 命令
     const { stdout, stderr } = await execPromisified(`curl -X PUT \
       -H "X-Shopify-Access-Token: ${process.env.ShopifyToken}" \
@@ -381,13 +453,12 @@ router.post('/renewShopifyItemcURL', async (req, res) => {
       }' \
       "https://${process.env.ShopID}.myshopify.com/admin/api/2023-04/products/${spid}.json"`);
 
-  
-      const updatedProduct = JSON.parse(stdout);
-    
-    res.send({ 
-      status: 'success', 
+    const updatedProduct = JSON.parse(stdout);
+
+    res.send({
+      status: 'success',
       message: 'Shopify 商品更新成功',
-      product: updatedProduct 
+      product: updatedProduct,
     });
   } catch (error) {
     console.error(error);
@@ -398,7 +469,18 @@ router.post('/renewShopifyItemcURL', async (req, res) => {
 // axios shopify Item update (single product)
 router.post('/renewShopifyItemAxios', async (req, res) => {
   try {
-    const { spid, sku, title, product_type, price, vendor, src, inventory_quantity_L1_68315971798, inventory_quantity_L2_72517222614, tag } = req.body;
+    const {
+      spid,
+      sku,
+      title,
+      product_type,
+      price,
+      vendor,
+      src,
+      inventory_quantity_L1_68315971798,
+      inventory_quantity_L2_72517222614,
+      tag,
+    } = req.body;
 
     const spid_number = parseInt(spid);
 
@@ -411,14 +493,14 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
           title: title,
           product_type: product_type,
           vendor: vendor,
-          tags: tag
-        }
+          tags: tag,
+        },
       },
       {
         headers: {
           'X-Shopify-Access-Token': process.env.ShopifyToken,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       }
     );
 
@@ -430,7 +512,7 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
     if (!variantToUpdate) {
       return res.status(404).send({
         status: 'error',
-        message: '找不到相應的變體'
+        message: '找不到相應的變體',
       });
     }
 
@@ -443,14 +525,14 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
       {
         variant: {
           id: variantToUpdate.id,
-          price: variantToUpdate.price
-        }
+          price: variantToUpdate.price,
+        },
       },
       {
         headers: {
           'X-Shopify-Access-Token': process.env.ShopifyToken,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       }
     );
 
@@ -460,8 +542,18 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
     const inventoryItemID = variantToUpdate.inventory_item_id;
 
     // 提取 L1 和 L2 的數字部分
-    const locationID_L1 = parseInt(Object.keys(req.body).find(key => key.startsWith('inventory_quantity_L1_')).split('_').pop());
-    const locationID_L2 = parseInt(Object.keys(req.body).find(key => key.startsWith('inventory_quantity_L2_')).split('_').pop());
+    const locationID_L1 = parseInt(
+      Object.keys(req.body)
+        .find((key) => key.startsWith('inventory_quantity_L1_'))
+        .split('_')
+        .pop()
+    );
+    const locationID_L2 = parseInt(
+      Object.keys(req.body)
+        .find((key) => key.startsWith('inventory_quantity_L2_'))
+        .split('_')
+        .pop()
+    );
 
     // 更新庫存（L1）
     const updateInventoryL1Response = await axios.post(
@@ -469,13 +561,13 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
       {
         location_id: locationID_L1,
         inventory_item_id: inventoryItemID,
-        available: req.body.inventory_quantity_L1_68315971798
+        available: req.body.inventory_quantity_L1_68315971798,
       },
       {
         headers: {
           'X-Shopify-Access-Token': process.env.ShopifyToken,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       }
     );
 
@@ -485,13 +577,13 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
       {
         location_id: locationID_L2,
         inventory_item_id: inventoryItemID,
-        available: req.body.inventory_quantity_L2_72517222614
+        available: req.body.inventory_quantity_L2_72517222614,
       },
       {
         headers: {
           'X-Shopify-Access-Token': process.env.ShopifyToken,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       }
     );
 
@@ -499,9 +591,16 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
     const updatedInventoryL2 = updateInventoryL2Response.data;
 
     const successMessage = 'Shopify 商品更新成功';
-    const priceMessage = updateVariantResponse.status === 200 ? '價格更新成功' : '價格更新失敗';
-    const inventoryL1Message = updateInventoryL1Response.status === 200 ? '庫存 L1 更新成功' : '庫存 L1 更新失敗';
-    const inventoryL2Message = updateInventoryL2Response.status === 200 ? '庫存 L2 更新成功' : '庫存 L2 更新失敗';
+    const priceMessage =
+      updateVariantResponse.status === 200 ? '價格更新成功' : '價格更新失敗';
+    const inventoryL1Message =
+      updateInventoryL1Response.status === 200
+        ? '庫存 L1 更新成功'
+        : '庫存 L1 更新失敗';
+    const inventoryL2Message =
+      updateInventoryL2Response.status === 200
+        ? '庫存 L2 更新成功'
+        : '庫存 L2 更新失敗';
 
     res.send({
       status: 'success',
@@ -509,14 +608,12 @@ router.post('/renewShopifyItemAxios', async (req, res) => {
       product: updatedProduct,
       variant: updatedVariant,
       inventoryL1: updatedInventoryL1,
-      inventoryL2: updatedInventoryL2
+      inventoryL2: updatedInventoryL2,
     });
   } catch (error) {
     console.error(error);
     res.status(500).send({ status: 'error', message: '內部伺服器錯誤' });
   }
 });
-
-
 
 module.exports = router;

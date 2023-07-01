@@ -101,7 +101,7 @@
                                 <% if (order.fulfillments_id && order.fulfillments_id.length > 0) { %>
                                     <button class="btn btn-success" type="button" id="<%= order.ID %>" onclick='GoShipping("<%= order.ID %>", "<%= JSON.stringify(order.fulfillments_id[0]) %>")'>更新</button>
                                   <% } else { %>
-                                    <button class="btn btn-danger" type="button" disabled>更新</button>
+                                    <button class="btn btn-danger" type="button" id="<%= order.ID %>" onclick='GoShipping("<%= order.ID %>", null)' disabled>更新</button>
                                   <% } %>
                             </div>
                         </td>
