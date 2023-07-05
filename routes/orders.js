@@ -99,24 +99,20 @@ router.get('/', async (req, res) => {
       // 過濾 7-11賣貨便 的訂單
       const sevenElevenOrders = MYorders.filter(function (order) {
         return (
-          order.Shipping_Method === '7-11賣貨便' ||
-          order.Shipping_Method === '7-11貨到付款' ||
-          (order.Shipping_Method === '7-11貨到付款滿千免運' &&
-            order.cancelled_at === null &&
-            order.Financial !== 'voided' &&
-            order.Market !== 'N/A')
+          order.Shipping_Method === '7-11貨到付款' &&
+          order.cancelled_at === null &&
+          order.Financial !== 'voided' &&
+          order.Market !== 'N/A'
         );
       });
       // 過濾 超商取貨 的訂單
       const convenienceStoreOrders = MYorders.filter(function (order) {
         return (
-          order.Shipping_Method === '7-11取貨不付款信用卡刷卡' ||
-          order.Shipping_Method === '7-11取貨不付款信用卡刷卡滿1500免運' ||
-          (order.Shipping_Method === '超商取貨' &&
-            order.fulfillment_status === null &&
-            order.cancelled_at === null &&
-            order.Financial !== 'voided' &&
-            order.Market !== 'N/A')
+          order.Shipping_Method === '7-11取貨不付款信用卡刷卡' &&
+          order.fulfillment_status === null &&
+          order.cancelled_at === null &&
+          order.Financial !== 'voided' &&
+          order.Market !== 'N/A'
         );
       });
       // 取代原本的 orders
